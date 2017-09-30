@@ -1,4 +1,6 @@
 import logging
+from operator import itemgetter
+from typing import List, Union, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,13 @@ class SmParser(object):
             line = line.strip()
 
             while line:
+                # detect and remove comment on a line
+                # there's can be an // anywhere in the line
+                # discard everything after
+                comment_pos = line.find("//")
+                if comment_pos > -1:
+                    # clean the data after removing the comment
+                    line = line[:comment_pos].strip()
                 if self.state == self.INFO:
                     # print("info")
                     separator = line.find(":")
@@ -53,11 +62,12 @@ class SmParser(object):
                 if self.state == self.END_DATA:
                     # print("key: %s data: %s" % (key, line_data))
                     if hasattr(self.song, key):
-                        setattr(self.song, key, line_data)
+                        if key == "notes":
+                            self.song.notes.append(line_data)
+                        else:
+                            setattr(self.song, key, line_data)
                     line_data = ""
                     self.state = self.INFO
-
-
 
 
 class Song(object):
@@ -70,7 +80,26 @@ class Song(object):
         self.banner = None
         self.music = None
         self.author = None
-        self.bpm = None
+        self.bpms = None
+        self.parsed_bpms = None
+        self.notes = []
 
     def __str__(self):
         return "%s - %s" % (self.title, self.artist)
+
+    def get_bpm(self) -> List[List[float]]:
+        # cache
+        if self.parsed_bpms is not None:
+            return self.parsed_bpms
+
+        if self.bpms:
+            self.parsed_bpms = [list(map(float, x.split("="))) for x in self.bpms.split(",")]
+        else:
+            self.parsed_bpms = []
+        return self.parsed_bpms
+
+    def get_mean_bpm(self) -> float:
+        bpm_list = self.get_bpm()
+        if not bpm_list:
+            raise AttributeError("No BPM data")
+        return sum(map(itemgetter(1), bpm_list)) / len(bpm_list)

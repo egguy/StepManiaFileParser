@@ -19,3 +19,5 @@ for i in sm_files:
     parser = SmParser(data.read())
     parser.parse()
     print(parser.song)
+    print(parser.song.get_bpm())
+    print(parser.song.notes)
