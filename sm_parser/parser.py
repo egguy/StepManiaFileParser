@@ -1,6 +1,6 @@
 import logging
 from operator import itemgetter
-from typing import List, Union, Optional, Any
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +103,36 @@ class Song(object):
         if not bpm_list:
             raise AttributeError("No BPM data")
         return sum(map(itemgetter(1), bpm_list)) / len(bpm_list)
+
+    def parse_notes(self):
+        if not self.notes:
+            return None
+        return [StepChart(x) for x in self.notes]
+
+
+class StepChart(object):
+    def __init__(self, raw_chart):
+        self.raw_chart = raw_chart
+        self.dance_type = None
+        self.dance_sub_type = None
+        self.difficultly_description = None
+        self.difficultly = None
+        self.steps = 0
+        self.groove = None
+
+        self.parse()
+
+    def parse(self):
+        split_data = self.raw_chart.split(":")
+
+        self.dance_type, self.dance_sub_type = split_data[0].split('-')
+        self.difficultly_description = split_data[1]
+        self.difficultly = split_data[2]
+        self.steps = int(split_data[3])
+        self.groove = split_data[4]
+
+    def __str__(self):
+        return "%s %s %s" % (self.dance_type, self.dance_sub_type, self.difficultly)
+
+    def __repr__(self):
+        return "<%s>" % self.__str__()
