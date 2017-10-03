@@ -119,6 +119,9 @@ class StepChart(object):
         self.difficultly = None
         self.steps = 0
         self.groove = None
+        self.step_data = None
+        self.n_th = 0
+        self.measures = 0
 
         self.parse()
 
@@ -130,6 +133,7 @@ class StepChart(object):
         self.difficultly = split_data[2]
         self.steps = int(split_data[3])
         self.groove = split_data[4]
+        self.step_data = split_data[5].split(",")
 
     def __str__(self):
         return "%s %s %s" % (self.dance_type, self.dance_sub_type, self.difficultly)

@@ -1,9 +1,7 @@
 import hashlib
 import sys
+import uuid
 import zipfile
-from io import BytesIO
-
-import mutagen
 
 from sm_parser.parser import SmParser
 
@@ -26,21 +24,11 @@ def is_dir(zip_file: zipfile.ZipInfo) -> bool:
     return zip_file.filename[-1] == "/"
 
 
-def is_music(zip_file: zipfile.ZipInfo) -> bool:
-    filename = zip_file.filename.lower()
-    return filename.endswith("mp3") or filename.endswith("ogg")
-
-
 for i in my_zipfile.infolist():
     if is_dir(i):
         dirs[i.filename.split("/")[0]] = []
-    if is_music(i):
-        print(i)
-        buffer = BytesIO(my_zipfile.open(i).read())
-        print(mutagen.File(buffer))
 
 print("Pack name: %s" % dirs)
-
 
 for i in sm_files:
     print(i)
@@ -58,6 +46,12 @@ for i in sm_files:
     song_hash = hashlib.sha256(buffer)
     dirs[pack_name].append({"parser": parser, "id": song_hash.hexdigest()})
 
+from elasticsearch import Elasticsearch
+
+# by default we don't sniff, ever
+es = Elasticsearch()
+
+es.indices.delete(index='stepmania', ignore=[400, 404])
 for key, values in dirs.items():
     print(key, values)
 
@@ -78,4 +72,6 @@ for key, values in dirs.items():
             "type": list({x.dance_type for x in notes}),
             "difficulty": list({x.difficultly.lower() for x in notes}),
         }
+        id = uuid.uuid4().hex
         print(document)
+        es.create(index="stepmania", doc_type="stepmania_song", id=value['id'], body=document)
